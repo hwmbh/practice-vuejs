@@ -18,3 +18,4 @@ new Vue({
         'app-header': appHeader
     }
 });
+

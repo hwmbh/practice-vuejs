@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Vue.js Tutorial | Directives</title>
+    <link rel="stylesheet" href="../libs/bootstrap.min.css">
+</head>
+<body>
+<div id="app">
+    <h1 v-text="message"></h1>
+    <h2 v-html="intro"></h2>
+    <h3 v-pre>{{ message }}</h3>
+    <h3 v-once>{{ message }}</h3>
+    <h3 v-cloak>{{ message }}</h3>
+    <p v-show="viewed">You have see this paragraph.</p>
+    <p v-if="viewed">You have see this paragraph.</p>
+    <p v-else>You have see another paragraph.</p>
+    <p v-if="viewed === viewed2">You see if equal viewed element!</p>
+</div>
+
+<script src="../libs/vue@2.4.2.js"></script>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello world!',
+            intro: 'Welcome to the Tutorial <small>It is all about Vue.js</small>',
+            viewed: true,
+            viewed2: true
+        }
+    })
+</script>
+</body>
+</html>
