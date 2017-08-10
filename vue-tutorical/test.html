@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="http://127.0.0.1:8080/css/main.css">
+    <style>
+        [v-cloak] {
+            display:block;
+        }
+        .form-horizontal{ width:auto;}
+        .col-sm-2{ width:auto;}
+    </style>
+</head>
+<body>
+
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-md-2">
+                <input type="text" class="form-control" v-model="q.productName" @keyup.enter="query" placeholder="名称">
+            </div>
+            <div class="form-group col-md-2">
+                <select v-model="q.productStatus" class="form-control" @keyup.enter="query" placeholder="状态">
+                    <option value="-1">请选择状态</option>
+                    <option value="0">下架</option>
+                    <option value="1">上架</option>
+                    <option value="2">售罄</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <select v-model="q.recommend" class="form-control" @keyup.enter="query" placeholder="推荐">
+                    <option value="-1">请选择推荐</option>
+                    <option value="1">首页推荐</option>
+                    <option value="2">频道首页推荐</option>
+                    <option value="3">非推荐</option>
+                </select>
+            </div>
+
+            <a class="btn btn-default" @click="query">查询</a>
+
+            <a v-if="hasPermission('pe:product:save')" class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;添加</a>
+            <a v-if="hasPermission('pe:product:update')" class="btn btn-primary" @click="update"><i
+                    class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            <a v-if="hasPermission('pe:product:onShelf')" class="btn btn-primary" @click="onShelf"><i
+                    class="fa fa-pencil-square-o"></i>&nbsp;上架</a>
+            <a v-if="hasPermission('pe:product:offShelf')" class="btn btn-primary" @click="offShelf"><i
+                    class="fa fa-pencil-square-o"></i>&nbsp;下架</a>
+            <a v-if="hasPermission('pe:product:sellOut')" class="btn btn-primary" @click="sellOut"><i
+                    class="fa fa-pencil-square-o"></i>&nbsp;售罄</a>
+            <a v-if="hasPermission('pe:product:preview')" class="btn btn-primary" @click="preview"><i
+                    class="fa fa-pencil-square-o"></i>&nbsp;在线预览</a>
+
+        </div>
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>产品图标</div>
+                    <div class="col-sm-10">
+                        <!--<input type="button" @click="logoUpload" value="上传"/>
+                        <img src="log.gif" width="50px;" height="50px;" v-model="productVO.imageUrl"/>-->
+                        <input type="text" class="form-control" v-model="productVO.imageUrl" placeholder="产品图标"/>
+                    </div>
+                </div>
+                <div class="col-sm-6"></div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>产品名称</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="productVO.productName" placeholder="产品名称"/>
+                    </div>
+                </div>
+                <div class="col-sm-6"></div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>管理机构</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="productVO.manageOrg" placeholder="管理机构"/>
+                    </div>
+                </div>
+                <div class="col-sm-6"></div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>基金类型</div>
+                    <div class="col-sm-4">
+                        <!--<select v-model="productVO.fundType" class="form-control" @keyup.enter="query" placeholder="基金类型">
+                            <option value="-1">请选择</option>
+                            <option value="0">成长基金</option>
+                            <option value="1">并购基金</option>
+                            <option value="2">创业基金</option>
+                        </select>-->
+                        <select class="form-control" v-model="productVO.fundType">
+                            <option v-for="option in fundTypeList" v-bind:value="option.val">
+                                {{ option.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>起投金额</div>
+                    <div class="col-sm-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model="productVO.investUnitAmountdb" placeholder="起投金额"/>
+                            <div class="input-group-addon">万</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label">组织形式</div>
+                    <div class="col-sm-4">
+                        <!--<select v-model="productVO.orgType" class="form-control" @keyup.enter="query" placeholder="组织形式">
+                            <option value="-1">请选择</option>
+                            <option value="0">有限合伙企业</option>
+                            <option value="1">契约型</option>
+                            <option value="2">公司型</option>
+                        </select>-->
+                        <select class="form-control" v-model="productVO.orgType">
+                            <option v-for="option in orgTypeList" v-bind:value="option.val">
+                                {{ option.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-2 control-label">赎回费率</div>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" v-model="productVO.redemptionFeedb"
+                               placeholder="格式：00.00%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>投资方向</div>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" v-model="productVO.investDirection" placeholder="投资方向"/>
+                    </div>
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>目标规模</div>
+                    <div class="col-sm-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model="productVO.targetAmountdb" placeholder="目标规模"/>
+                            <div class="input-group-addon">万</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label">认购费率</div>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" v-model="productVO.subscribeFeedb" placeholder="格式：00.00%"/>
+                    </div>
+                    <div class="col-sm-2 control-label">业绩报酬</div>
+                    <div class="col-sm-4">
+                        <input type="number" class="form-control" v-model="productVO.rewarddb" placeholder="例如：超额业绩的25%"/>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>资本类型</div>
+                    <div class="col-sm-4">
+                        <!--<select v-model="productVO.capitalType" class="form-control" @keyup.enter="query"
+                                placeholder="资本类型">
+                            <option value="-1">请选择</option>
+                            <option value="0">本土</option>
+                            <option value="1">海外</option>
+                            <option value="2">合资</option>
+                        </select>-->
+                        <select class="form-control" v-model="productVO.capitalType">
+                            <option v-for="option in capTypeList" v-bind:value="option.val">
+                                {{ option.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>存续期限</div>
+                    <div class="col-sm-4">
+                        <div class="form-inline">
+                            <input type="text" class="form-control" v-model="productVO.deadline" placeholder="存续期限"/>
+                            <select class="form-control" v-model="productVO.deadType">
+                                <option value="0">年</option>
+                                <option value="1">月</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label">管理费率</div>
+                    <div class="col-sm-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model="productVO.manageFeedb" placeholder="管理费率"/>
+                            <div class="input-group-addon">/年</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label">基金最低成立规模</div>
+                    <div class="col-sm-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model="productVO.minFoundedAmountdb"
+                                   placeholder="基金最低成立规模"/>
+                            <div class="input-group-addon">万</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <h5>&nbsp;&nbsp;</h5>
+                    <div class="col-sm-2 control-label">点评</div>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" placeholder="点评" v-model="productVO.review"  name="" id="" cols="20" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <h5><b>专题介绍URL地址</b></h5>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">&nbsp;&nbsp;PC：</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.pcTopicUrl" placeholder="专题介绍URL地址 pc"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">APP：</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.appTopicUrl"
+                                   placeholder="专题介绍URL地址 APP"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>状态</div>
+                    <div class="col-sm-10">
+                        <label for="status0">下架</label>
+                        <input type="radio" id="status0" value="0" v-model="productVO.status"/>
+                        <label for="status1">上架</label>
+                        <input type="radio" id="status1" value="1" v-model="productVO.status"/>
+                        <label for="status2">售罄</label>
+                        <input type="radio" id="status2" value="2" v-model="productVO.status"/>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-6">
+                    <div class="col-sm-2 control-label">是否推荐(可多选)</div>
+                    <div class="col-sm-10">
+                        <div class="form-inline">
+                            <label for="ishomerecommend">首页推荐</label>
+                            <input type="checkbox" id="ishomerecommend" v-model="productVO.homeRecommend"/>
+                            <input class="form-control" type="number" v-model="productVO.homeRecommendOrder" placeholder="首页推荐排序"/>
+                        </div>
+                        <br>
+                        <div class="form-inline">
+                            <label for="ischannelrecommend">私募频道首页推荐</label>
+                            <input type="checkbox" id="ischannelrecommend" v-model="productVO.channelRecommend"/>
+                            <input class="form-control" type="number" v-model="productVO.channelRecommendOrder" placeholder="私募频道首页推荐排序"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-12">
+                    <div class="col-sm-2 control-label"><span style="color: red">*</span>产品亮点</div>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" rows="7" cols="20" v-model="productVO.highlights" placeholder="产品亮点"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div style="border: gray outset;">
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队pc图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[0].pcImgUrl"
+                                   placeholder="管理团队pc图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队app图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[0].appImageUrl"
+                                   placeholder="管理团队app图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">名称</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[0].name"
+                                   placeholder="名称"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">介绍</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[0].intro"
+                                   placeholder="介绍"/>
+                        </div>
+                    </div>
+                </div>
+                <div style="border: gray outset;">
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队pc图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[1].pcImgUrl"
+                                   placeholder="管理团队pc图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队app图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[1].appImageUrl"
+                                   placeholder="管理团队app图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">名称</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[1].name"
+                                   placeholder="名称"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">介绍</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[1].intro"
+                                   placeholder="介绍"/>
+                        </div>
+                    </div>
+                </div>
+                <div style="border: gray outset;">
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队pc图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[2].pcImgUrl"
+                                   placeholder="管理团队pc图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">管理团队app图片</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[2].appImageUrl"
+                                   placeholder="管理团队app图片"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">名称</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[2].name"
+                                   placeholder="名称"/>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2 control-label">介绍</div>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" v-model="productVO.teamList[2].intro"
+                                   placeholder="介绍"/>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue"></script>
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</body>
+</html>
